@@ -1,4 +1,3 @@
-
 const API_KEY = 'sk-default-H0RDPuvT95RpWUepisEbn0NVZEs0hBEf'; // Note: Storing API keys client-side is not recommended for production.
 const API_URL = 'https://agent-prod.studio.lyzr.ai/v3/inference/chat/';
 
@@ -35,13 +34,8 @@ const callAgent = async (agent: { agent_id: string, session_id: string }, messag
   }
   
   const data = await response.json();
-  // The API seems to return a JSON string inside the 'message' field.
-  try {
-    return JSON.parse(data.message);
-  } catch (e) {
-    console.error("Failed to parse agent response message:", data.message);
-    return { error: "Invalid JSON response from agent", original_message: data.message };
-  }
+  // The API can return a JSON string or plain text, so we return the raw message.
+  return data.message;
 };
 
 export const generateBlueprint = async (answers: Answers) => {
@@ -51,8 +45,23 @@ export const generateBlueprint = async (answers: Answers) => {
 
   try {
     const results = await Promise.all(agents.map(agent => callAgent(agent, formattedMessage)));
-    // Combine results from all agents into a single object
-    const combinedBlueprint = results.reduce((acc, current) => ({ ...acc, ...current }), {});
+    
+    // Combine results from all agents. Some might be JSON, others plain text.
+    const combinedBlueprint = results.reduce((acc, current, index) => {
+      try {
+        const parsed = JSON.parse(current);
+        // If the parsed content is a JSON object, merge it into the blueprint.
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          return { ...acc, ...parsed };
+        }
+        // Otherwise, add it with a generic key.
+        return { ...acc, [`agent_response_${index}`]: parsed };
+      } catch (e) {
+        // If parsing fails, it's plain text. Add it with a generic key.
+        return { ...acc, [`agent_response_${index}`]: current };
+      }
+    }, {});
+
     return combinedBlueprint;
   } catch (error) {
     console.error("Error generating blueprint:", error);
