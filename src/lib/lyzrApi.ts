@@ -46,25 +46,25 @@ export const generateBlueprint = async (answers: Answers) => {
   try {
     const results = await Promise.all(agents.map(agent => callAgent(agent, formattedMessage)));
     
-    // For each API response, take only the first key-value pair if it's a JSON object.
-    const combinedBlueprint = results.reduce((acc, current, index) => {
+    // Process each result, but keep them as separate items in an array.
+    const processedResults = results.map((current, index) => {
       try {
         const parsed = JSON.parse(current);
         // Check if it's a non-null, non-array object with at least one key
         if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) && Object.keys(parsed).length > 0) {
           const firstKey = Object.keys(parsed)[0];
-          // Add only the first key-value pair to the accumulator
-          return { ...acc, [firstKey]: parsed[firstKey] };
+          // Return an object representing the section
+          return { id: firstKey, title: firstKey.replace(/_/g, ' '), content: parsed[firstKey] };
         }
-        // If not a JSON object with keys, or a different JSON type, treat it as a generic response.
-        return { ...acc, [`agent_response_${index}`]: current };
+        // If not a valid JSON object, treat as plain text.
+        return { id: `agent_response_${index}`, title: `Agent Response ${index + 1}`, content: current };
       } catch (e) {
-        // If parsing fails, it's plain text. Add it with a generic key.
-        return { ...acc, [`agent_response_${index}`]: current };
+        // If parsing fails, it's plain text.
+        return { id: `agent_response_${index}`, title: `Agent Response ${index + 1}`, content: current };
       }
-    }, {});
+    });
 
-    return combinedBlueprint;
+    return processedResults;
   } catch (error) {
     console.error("Error generating blueprint:", error);
     throw error;
