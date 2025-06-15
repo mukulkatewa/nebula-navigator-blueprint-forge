@@ -1,13 +1,17 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download } from 'lucide-react';
-import BlueprintSectionCard, { BlueprintSection } from './BlueprintSectionCard';
+import OpportunityRecommendation from './OpportunityRecommendation';
+import ImplementationRoadmap from './ImplementationRoadmap';
+import SwotAnalysis from './SwotAnalysis';
+import CostBreakdown from './CostBreakdown';
 
-const BlueprintDisplay = ({ blueprint }: { blueprint: BlueprintSection[] }) => {
+const BlueprintDisplay = ({ blueprint }: { blueprint: any[] }) => {
   const handleDownload = () => {
-    const blueprintObject = blueprint.reduce((acc, section) => {
-      acc[section.id] = section.content;
+    const blueprintObject = blueprint.reduce((acc, section, index) => {
+      acc[`agent_${index + 1}`] = section;
       return acc;
     }, {} as Record<string, any>);
 
@@ -35,11 +39,30 @@ const BlueprintDisplay = ({ blueprint }: { blueprint: BlueprintSection[] }) => {
         </Button>
       </header>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {blueprint.map((section) => (
-            <BlueprintSectionCard key={section.id} section={section} />
-        ))}
-      </div>
+      <Tabs defaultValue="opportunity" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="opportunity">Opportunity & Recommendation</TabsTrigger>
+          <TabsTrigger value="roadmap">Implementation Roadmap</TabsTrigger>
+          <TabsTrigger value="swot">SWOT Analysis</TabsTrigger>
+          <TabsTrigger value="cost">Cost Breakdown</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="opportunity" className="mt-6">
+          <OpportunityRecommendation data={blueprint[0]} />
+        </TabsContent>
+        
+        <TabsContent value="roadmap" className="mt-6">
+          <ImplementationRoadmap data={blueprint[1]} />
+        </TabsContent>
+        
+        <TabsContent value="swot" className="mt-6">
+          <SwotAnalysis data={blueprint[2]} />
+        </TabsContent>
+        
+        <TabsContent value="cost" className="mt-6">
+          <CostBreakdown data={blueprint[3]} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
